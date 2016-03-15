@@ -11,7 +11,7 @@ pub struct StyleSheet {
     parentStyleSheet: StyleSheet,
     title: DOMString,
     media: MediaList,
-    disabled: bool,
+    mut disabled: bool,
 }
 
 impl StyleSheetMethods for StyleSheet{
@@ -36,6 +36,14 @@ impl StyleSheetMethods for StyleSheet{
     }
     pub fn ownerNode(&self)-> ProcessingInstruction{
 	&self.ownerNode
+    }
+    pub fn set_disable(&self,val: bool) -> StyleSheet{
+        if val{
+          &self.disabled = true
+        } else {
+          &self.disabled = false
+	}
+        &self
     }
 }
 
