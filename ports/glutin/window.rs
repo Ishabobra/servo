@@ -16,12 +16,15 @@ use gleam::gl;
 use glutin;
 #[cfg(feature = "window")]
 use glutin::{Api, ElementState, Event, GlRequest, MouseButton, VirtualKeyCode, MouseScrollDelta};
+use glutin::{TouchPhase};
 use layers::geometry::DevicePixel;
 use layers::platform::surface::NativeDisplay;
 #[cfg(feature = "window")]
 use msg::constellation_msg::{KeyState, NONE, CONTROL, SHIFT, ALT, SUPER};
 use msg::constellation_msg::{self, Key};
 use net_traits::net_error_list::NetError;
+#[cfg(feature = "window")]
+use script_traits::TouchEventType;
 #[cfg(feature = "window")]
 use std::cell::{Cell, RefCell};
 use std::os::raw::c_void;
@@ -90,13 +93,20 @@ impl Window {
                parent: Option<glutin::WindowID>) -> Rc<Window> {
         let width = window_size.to_untyped().width;
         let height = window_size.to_untyped().height;
+
+        // If there's no chrome, start off with the window invisible. It will be set to visible in
+        // `load_end()`. This avoids an ugly flash of unstyled content (especially important since
+        // unstyled content is white and chrome often has a transparent background). See issue
+        // #9996.
+        let visible = is_foreground && !opts::get().no_native_titlebar;
+
         let mut builder =
             glutin::WindowBuilder::new().with_title("Servo".to_string())
                                         .with_decorations(!opts::get().no_native_titlebar)
                                         .with_transparency(opts::get().no_native_titlebar)
                                         .with_dimensions(width, height)
                                         .with_gl(Window::gl_version())
-                                        .with_visibility(is_foreground)
+                                        .with_visibility(visible)
                                         .with_parent(parent)
                                         .with_multitouch();
 
@@ -226,23 +236,18 @@ impl Window {
                 self.event_queue.borrow_mut().push(
                     WindowEvent::MouseWindowMoveEventClass(Point2D::typed(x as f32, y as f32)));
             }
-            Event::MouseWheel(delta) => {
+            Event::MouseWheel(delta, phase) => {
                 let (dx, dy) = match delta {
                     MouseScrollDelta::LineDelta(dx, dy) => (dx, dy * LINE_HEIGHT),
                     MouseScrollDelta::PixelDelta(dx, dy) => (dx, dy),
                 };
-                self.scroll_window(dx, dy);
+                let phase = glutin_phase_to_touch_event_type(phase);
+                self.scroll_window(dx, dy, phase);
             },
             Event::Touch(touch) => {
-                use glutin::TouchPhase;
-                use script_traits::{TouchEventType, TouchId};
+                use script_traits::TouchId;
 
-                let phase = match touch.phase {
-                    TouchPhase::Started => TouchEventType::Down,
-                    TouchPhase::Moved => TouchEventType::Move,
-                    TouchPhase::Ended => TouchEventType::Up,
-                    TouchPhase::Cancelled => TouchEventType::Cancel,
-                };
+                let phase = glutin_phase_to_touch_event_type(touch.phase);
                 let id = TouchId(touch.id as i32);
                 let point = Point2D::typed(touch.location.0 as f32, touch.location.1 as f32);
                 self.event_queue.borrow_mut().push(WindowEvent::Touch(phase, id, point));
@@ -266,10 +271,11 @@ impl Window {
     }
 
     /// Helper function to send a scroll event.
-    fn scroll_window(&self, dx: f32, dy: f32) {
+    fn scroll_window(&self, dx: f32, dy: f32, phase: TouchEventType) {
         let mouse_pos = self.mouse_pos.get();
         let event = WindowEvent::Scroll(Point2D::typed(dx as f32, dy as f32),
-                                        Point2D::typed(mouse_pos.x as i32, mouse_pos.y as i32));
+                                        Point2D::typed(mouse_pos.x as i32, mouse_pos.y as i32),
+                                        phase);
         self.event_queue.borrow_mut().push(event);
     }
 
@@ -614,7 +620,10 @@ impl WindowMethods for Window {
     fn load_start(&self, _: bool, _: bool) {
     }
 
-    fn load_end(&self, _: bool, _: bool) {
+    fn load_end(&self, _: bool, _: bool, root: bool) {
+        if root && opts::get().no_native_titlebar {
+            self.window.show()
+        }
     }
 
     fn load_error(&self, _: NetError, _: String) {
@@ -736,23 +745,33 @@ impl WindowMethods for Window {
 
             (NONE, Key::PageDown) |
             (NONE, Key::Space) => {
-                self.scroll_window(0.0, -self.framebuffer_size().as_f32().to_untyped().height + 2.0 * LINE_HEIGHT);
+                self.scroll_window(0.0,
+                                   -self.framebuffer_size()
+                                        .as_f32()
+                                        .to_untyped()
+                                        .height + 2.0 * LINE_HEIGHT,
+                                   TouchEventType::Move);
             }
             (NONE, Key::PageUp) |
             (SHIFT, Key::Space) => {
-                self.scroll_window(0.0, self.framebuffer_size().as_f32().to_untyped().height - 2.0 * LINE_HEIGHT);
+                self.scroll_window(0.0,
+                                   self.framebuffer_size()
+                                       .as_f32()
+                                       .to_untyped()
+                                       .height - 2.0 * LINE_HEIGHT,
+                                   TouchEventType::Move);
             }
             (NONE, Key::Up) => {
-                self.scroll_window(0.0, 3.0 * LINE_HEIGHT);
+                self.scroll_window(0.0, 3.0 * LINE_HEIGHT, TouchEventType::Move);
             }
             (NONE, Key::Down) => {
-                self.scroll_window(0.0, -3.0 * LINE_HEIGHT);
+                self.scroll_window(0.0, -3.0 * LINE_HEIGHT, TouchEventType::Move);
             }
             (NONE, Key::Left) => {
-                self.scroll_window(LINE_HEIGHT, 0.0);
+                self.scroll_window(LINE_HEIGHT, 0.0, TouchEventType::Move);
             }
             (NONE, Key::Right) => {
-                self.scroll_window(-LINE_HEIGHT, 0.0);
+                self.scroll_window(-LINE_HEIGHT, 0.0, TouchEventType::Move);
             }
 
             _ => {
@@ -860,7 +879,7 @@ impl WindowMethods for Window {
 
     fn load_start(&self, _: bool, _: bool) {
     }
-    fn load_end(&self, _: bool, _: bool) {
+    fn load_end(&self, _: bool, _: bool, _: bool) {
     }
     fn load_error(&self, _: NetError, _: String) {
     }
@@ -920,6 +939,16 @@ impl CompositorProxy for GlutinCompositorProxy {
             sender: self.sender.clone(),
             window_proxy: self.window_proxy.clone(),
         } as Box<CompositorProxy + Send>
+    }
+}
+
+#[cfg(feature = "window")]
+fn glutin_phase_to_touch_event_type(phase: TouchPhase) -> TouchEventType {
+    match phase {
+        TouchPhase::Started => TouchEventType::Down,
+        TouchPhase::Moved => TouchEventType::Move,
+        TouchPhase::Ended => TouchEventType::Up,
+        TouchPhase::Cancelled => TouchEventType::Cancel,
     }
 }
 

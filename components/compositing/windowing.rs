@@ -63,7 +63,7 @@ pub enum WindowEvent {
     Touch(TouchEventType, TouchId, TypedPoint2D<DevicePixel, f32>),
     /// Sent when the user scrolls. The first point is the delta and the second point is the
     /// origin.
-    Scroll(TypedPoint2D<DevicePixel, f32>, TypedPoint2D<DevicePixel, i32>),
+    Scroll(TypedPoint2D<DevicePixel, f32>, TypedPoint2D<DevicePixel, i32>, TouchEventType),
     /// Sent when the user zooms.
     Zoom(f32),
     /// Simulated "pinch zoom" gesture for non-touch platforms (e.g. ctrl-scrollwheel).
@@ -125,7 +125,7 @@ pub trait WindowMethods {
     /// Called when the browser has started loading a frame.
     fn load_start(&self, back: bool, forward: bool);
     /// Called when the browser is done loading a frame.
-    fn load_end(&self, back: bool, forward: bool);
+    fn load_end(&self, back: bool, forward: bool, root: bool);
     /// Called when the browser encounters an error while loading a URL
     fn load_error(&self, code: NetError, url: String);
     /// Called when the <head> tag has finished parsing

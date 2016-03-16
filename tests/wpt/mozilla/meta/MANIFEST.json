@@ -788,6 +788,18 @@
             "url": "/_mozilla/css/border_radius_clip_a.html"
           }
         ],
+        "css/border_radius_clipping_contents_a.html": [
+          {
+            "path": "css/border_radius_clipping_contents_a.html",
+            "references": [
+              [
+                "/_mozilla/css/border_radius_clipping_contents_ref.html",
+                "=="
+              ]
+            ],
+            "url": "/_mozilla/css/border_radius_clipping_contents_a.html"
+          }
+        ],
         "css/border_radius_dashed_a.html": [
           {
             "path": "css/border_radius_dashed_a.html",
@@ -4560,6 +4572,18 @@
             "url": "/_mozilla/css/text_align_start_end.html"
           }
         ],
+        "css/text_damage_a.html": [
+          {
+            "path": "css/text_damage_a.html",
+            "references": [
+              [
+                "/_mozilla/css/text_damage_ref.html",
+                "=="
+              ]
+            ],
+            "url": "/_mozilla/css/text_damage_a.html"
+          }
+        ],
         "css/text_decoration_cached.html": [
           {
             "path": "css/text_decoration_cached.html",
@@ -6986,6 +7010,18 @@
             ]
           ],
           "url": "/_mozilla/css/border_radius_clip_a.html"
+        }
+      ],
+      "css/border_radius_clipping_contents_a.html": [
+        {
+          "path": "css/border_radius_clipping_contents_a.html",
+          "references": [
+            [
+              "/_mozilla/css/border_radius_clipping_contents_ref.html",
+              "=="
+            ]
+          ],
+          "url": "/_mozilla/css/border_radius_clipping_contents_a.html"
         }
       ],
       "css/border_radius_dashed_a.html": [
@@ -10758,6 +10794,18 @@
             ]
           ],
           "url": "/_mozilla/css/text_align_start_end.html"
+        }
+      ],
+      "css/text_damage_a.html": [
+        {
+          "path": "css/text_damage_a.html",
+          "references": [
+            [
+              "/_mozilla/css/text_damage_ref.html",
+              "=="
+            ]
+          ],
+          "url": "/_mozilla/css/text_damage_a.html"
         }
       ],
       "css/text_decoration_cached.html": [

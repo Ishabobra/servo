@@ -101,9 +101,6 @@ class MachCommands(CommandBase):
         suites = OrderedDict([
             ("tidy", {"kwargs": {"faster": faster, "no_progress": no_progress},
                       "include_arg": "include"}),
-            ("ref", {"kwargs": {"kind": render_mode},
-                     "paths": [path.abspath(path.join("tests", "ref"))],
-                     "include_arg": "include"}),
             ("wpt", {"kwargs": {"release": release},
                      "paths": [path.abspath(path.join("tests", "wpt", "web-platform-tests")),
                                path.abspath(path.join("tests", "wpt", "mozilla"))],
@@ -500,8 +497,7 @@ class MachCommands(CommandBase):
         # Check that a release servo build exists
         bin_path = path.abspath(self.get_binary_path(release, dev))
 
-        return check_call(
-            [run_file, cmd, bin_path, base_dir])
+        return call([run_file, cmd, bin_path, base_dir])
 
     def dromaeo_test_runner(self, tests, release, dev):
         self.ensure_bootstrapped()
